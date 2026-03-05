@@ -52,6 +52,7 @@ func GetIPAddress(ip string) (province string, city string, err error) {
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		err = errors.New("查询地址失败！")
 		return
