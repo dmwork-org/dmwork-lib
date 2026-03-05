@@ -4,6 +4,9 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // GenerUUID 生成uuid
@@ -51,7 +54,8 @@ func UnderscoreName(name string) string {
 // CamelName 下划线写法转为驼峰写法
 func CamelName(name string) string {
 	name = strings.Replace(name, "_", " ", -1)
-	name = strings.Title(name)
+	caser := cases.Title(language.Und)
+	name = caser.String(name)
 	return strings.Replace(name, " ", "", -1)
 }
 
