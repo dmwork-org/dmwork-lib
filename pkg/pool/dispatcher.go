@@ -2,6 +2,7 @@ package pool
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/panjf2000/ants/v2"
 )
@@ -35,7 +36,7 @@ func (c Collector) loopPop() {
 	for job := range c.Work {
 
 		if c.pool.Running() >= int(c.workerCount+1) {
-			fmt.Println("worker count will full", "running:", c.pool.Running(), "workerCount", c.workerCount)
+			log.Println("[pool] worker count nearly full, running:", c.pool.Running(), "workerCount:", c.workerCount)
 		}
 
 		err := c.pool.Submit(func(jb *Job) func() {
@@ -44,7 +45,7 @@ func (c Collector) loopPop() {
 			}
 		}(job))
 		if err != nil {
-			fmt.Println(fmt.Errorf("job submit error: %v", err))
+			log.Printf("[pool] job submit error: %v", err)
 		}
 	}
 }

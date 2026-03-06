@@ -28,7 +28,6 @@ func renderHookCodeBlock(w io.Writer, node ast.Node, entering bool) (ast.WalkSta
 
 	_, ok := node.(*ast.Code)
 	if ok {
-		fmt.Println("code-------------->")
 		w.Write([]byte(fmt.Sprintf("<pre class=\"notranslate\">%s</pre>", string(node.AsLeaf().Literal))))
 		return ast.GoToNext, true
 	}
