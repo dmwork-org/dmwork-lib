@@ -48,11 +48,11 @@ func (w *list) Register(id uint64) <-chan interface{} {
 	newCh := make(chan interface{}, 1)
 	w.e[idx].l.Lock()
 	defer w.e[idx].l.Unlock()
-	if _, ok := w.e[idx].m[id]; !ok {
-		w.e[idx].m[id] = newCh
-	} else {
-		log.Panicf("dup id %x", id)
+	if existing, ok := w.e[idx].m[id]; ok {
+		log.Printf("wait: duplicate id %x, returning existing channel", id)
+		return existing
 	}
+	w.e[idx].m[id] = newCh
 	return newCh
 }
 
