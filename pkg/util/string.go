@@ -1,9 +1,9 @@
 package util
 
 import (
+	cryptorand "crypto/rand"
 	"math/rand"
 	"strings"
-	"time"
 )
 
 // GenerUUID 生成uuid
@@ -78,14 +78,16 @@ func GetRandomSalt() string {
 	return GetRandomString(8)
 }
 
-//GetRandomString 生成随机字符串
+// GetRandomString 生成加密安全的随机字符串
 func GetRandomString(num int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < num; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
+	const charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	result := make([]byte, num)
+	randomBytes := make([]byte, num)
+	if _, err := cryptorand.Read(randomBytes); err != nil {
+		panic(err)
+	}
+	for i := range result {
+		result[i] = charset[randomBytes[i]%byte(len(charset))]
 	}
 	return string(result)
 }
