@@ -927,7 +927,10 @@ func GetEnvInt64(key string, defaultValue int64) int64 {
 	if strings.TrimSpace(v) == "" {
 		return defaultValue
 	}
-	i, _ := strconv.ParseInt(v, 10, 64)
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
 	return i
 }
 
@@ -937,7 +940,10 @@ func GetEnvInt(key string, defaultValue int) int {
 	if strings.TrimSpace(v) == "" {
 		return defaultValue
 	}
-	i, _ := strconv.ParseInt(v, 10, 64)
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
 	return int(i)
 }
 
@@ -947,8 +953,11 @@ func GetEnvFloat64(key string, defaultValue float64) float64 {
 	if strings.TrimSpace(v) == "" {
 		return defaultValue
 	}
-	i, _ := strconv.ParseFloat(v, 64)
-	return i
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return f
 }
 
 // StringEnv StringEnv
