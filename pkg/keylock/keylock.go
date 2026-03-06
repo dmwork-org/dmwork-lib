@@ -14,8 +14,8 @@ const (
 type KeyLock struct {
 	locks         map[string]*innerLock //关键字锁map
 	cleanInterval time.Duration         //定时清除时间间隔
-	stopChan      chan struct{}         //停止信号
-	mutex         sync.RWMutex          //全局读写锁
+	stopChan      chan struct{}          //停止信号
+	mutex         sync.Mutex            //全局锁
 }
 
 // NewKeyLock NewKeyLock
@@ -27,41 +27,33 @@ func NewKeyLock() *KeyLock {
 	}
 }
 
-//Lock 根据关键字加锁
+// Lock 根据关键字加锁
 func (l *KeyLock) Lock(key string) {
-	l.mutex.RLock()
+	l.mutex.Lock()
 	keyLock, ok := l.locks[key]
-	if ok {
-		keyLock.add()
-	}
-	l.mutex.RUnlock()
 	if !ok {
-		l.mutex.Lock()
-		keyLock, ok = l.locks[key]
-		if !ok {
-			keyLock = newInnerLock()
-			l.locks[key] = keyLock
-		}
-		keyLock.add()
-		l.mutex.Unlock()
+		keyLock = newInnerLock()
+		l.locks[key] = keyLock
 	}
+	keyLock.add()
+	l.mutex.Unlock()
 	keyLock.Lock()
 }
 
-//Unlock 根据关键字解锁
+// Unlock 根据关键字解锁
 func (l *KeyLock) Unlock(key string) {
-	l.mutex.RLock()
+	l.mutex.Lock()
 	keyLock, ok := l.locks[key]
 	if ok {
 		keyLock.done()
 	}
-	l.mutex.RUnlock()
+	l.mutex.Unlock()
 	if ok {
 		keyLock.Unlock()
 	}
 }
 
-//Clean 清理空闲锁
+// Clean 清理空闲锁
 func (l *KeyLock) Clean() {
 	l.mutex.Lock()
 	for k, v := range l.locks {
@@ -72,17 +64,17 @@ func (l *KeyLock) Clean() {
 	l.mutex.Unlock()
 }
 
-//StartCleanLoop 开启清理协程
+// StartCleanLoop 开启清理协程
 func (l *KeyLock) StartCleanLoop() {
 	go l.cleanLoop()
 }
 
-//StopCleanLoop 停止清理协程
+// StopCleanLoop 停止清理协程
 func (l *KeyLock) StopCleanLoop() {
 	close(l.stopChan)
 }
 
-//清理循环
+// 清理循环
 func (l *KeyLock) cleanLoop() {
 	ticker := time.NewTicker(l.cleanInterval)
 	for {
@@ -96,13 +88,13 @@ func (l *KeyLock) cleanLoop() {
 	}
 }
 
-//内部锁信息
+// 内部锁信息
 type innerLock struct {
 	count int64
 	sync.Mutex
 }
 
-//新建内部锁
+// 新建内部锁
 func newInnerLock() *innerLock {
 	return &innerLock{}
 }
