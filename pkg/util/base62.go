@@ -22,16 +22,7 @@ func Ten2Hex(ten int64) string {
 
 func tenValue2Char(ten int64) string {
 	switch ten {
-	case 0:
-	case 1:
-	case 2:
-	case 3:
-	case 4:
-	case 5:
-	case 6:
-	case 7:
-	case 8:
-	case 9:
+	case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9:
 		return fmt.Sprintf("%d", ten)
 	case 10:
 		return "a"
@@ -80,7 +71,7 @@ func tenValue2Char(ten int64) string {
 	case 32:
 		return "w"
 	case 33:
-		return "s"
+		return "x"
 	case 34:
 		return "y"
 	case 35:
@@ -132,7 +123,7 @@ func tenValue2Char(ten int64) string {
 	case 58:
 		return "W"
 	case 59:
-		return "S"
+		return "X"
 	case 60:
 		return "Y"
 	case 61:
