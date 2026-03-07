@@ -118,6 +118,7 @@ func PostForWWWFormForBytres(urlStr string, params map[string]string, headers ma
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -157,6 +158,7 @@ func PostForWWWFormForAll(urlStr string, bodyData io.Reader, headers map[string]
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
