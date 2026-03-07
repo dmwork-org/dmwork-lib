@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -119,7 +118,7 @@ func PostForWWWFormForBytres(urlStr string, params map[string]string, headers ma
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +158,7 @@ func PostForWWWFormForAll(urlStr string, bodyData io.Reader, headers map[string]
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +197,7 @@ func PostForWWWFormReXML(urlStr string, params map[string]string, headers map[st
 		return nil, err
 	}
 	defer resp.Body.Close()
-	respData, err := ioutil.ReadAll(resp.Body)
+	respData, err := io.ReadAll(resp.Body)
 	fmt.Println(string(respData))
 	if err != nil {
 		return []byte(""), err
