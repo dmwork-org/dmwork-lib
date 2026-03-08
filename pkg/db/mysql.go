@@ -86,7 +86,7 @@ func (f FileDirMigrationSource) findMigrations(dir http.FileSystem, migrations *
 			}
 
 			migration, err := migrate.ParseMigration(info.Name(), file)
-			file.Close()
+			_ = file.Close()
 			if err != nil {
 				return fmt.Errorf("Error while parsing %s: %s", info.Name(), err)
 			}
