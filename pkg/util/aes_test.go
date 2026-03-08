@@ -107,6 +107,12 @@ func TestPKCS7UnPadding(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name:    "full block padding",
+			input:   []byte{0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
+			want:    []byte{},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
