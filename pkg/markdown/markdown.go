@@ -1,8 +1,8 @@
 package markdown
 
 import (
-	"fmt"
 	"io"
+	stdhtml "html"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/ast"
@@ -28,8 +28,8 @@ func renderHookCodeBlock(w io.Writer, node ast.Node, entering bool) (ast.WalkSta
 
 	_, ok := node.(*ast.Code)
 	if ok {
-		fmt.Println("code-------------->")
-		w.Write([]byte(fmt.Sprintf("<pre class=\"notranslate\">%s</pre>", string(node.AsLeaf().Literal))))
+		escaped := stdhtml.EscapeString(string(node.AsLeaf().Literal))
+		w.Write([]byte("<pre class=\"notranslate\">" + escaped + "</pre>"))
 		return ast.GoToNext, true
 	}
 
@@ -42,7 +42,7 @@ func renderHookCodeBlock(w io.Writer, node ast.Node, entering bool) (ast.WalkSta
 			options.String = "pl-s1"
 			options.Comment = "pl-c"
 		})
-		w.Write([]byte(fmt.Sprintf("<pre class=\"notranslate\">%s</pre>", string(syncHtml))))
+		w.Write([]byte("<pre class=\"notranslate\">" + string(syncHtml) + "</pre>"))
 		return ast.GoToNext, true
 	}
 	// test := syntaxhighlight.HTMLConfig{
