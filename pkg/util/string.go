@@ -4,6 +4,9 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // GenerUUID 生成uuid
@@ -51,7 +54,7 @@ func UnderscoreName(name string) string {
 // CamelName 下划线写法转为驼峰写法
 func CamelName(name string) string {
 	name = strings.Replace(name, "_", " ", -1)
-	name = strings.Title(name)
+	name = cases.Title(language.Und).String(name)
 	return strings.Replace(name, " ", "", -1)
 }
 
@@ -112,5 +115,5 @@ var names = []string{"独角王", "老鼋", "灵感大王", "如意真仙", "蝎
 
 // GetRandomName 获取随机的名字
 func GetRandomName() string {
-	return names[rand.Intn(len(names)-1)]
+	return names[rand.Intn(len(names))]
 }

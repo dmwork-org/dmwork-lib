@@ -25,6 +25,9 @@ type Context struct {
 	mySQLSession *dbr.Session
 	redisCache   *common.RedisCache
 	memoryCache  cache.Cache
+	mysqlOnce    sync.Once
+	redisOnce    sync.Once
+	memoryOnce   sync.Once
 	log.Log
 	EventPool      pool.Collector
 	PushPool       pool.Collector // 离线push
@@ -75,11 +78,9 @@ func (c *Context) GetConfig() *Config {
 
 // NewMySQL 创建mysql数据库实例
 func (c *Context) NewMySQL() *dbr.Session {
-
-	if c.mySQLSession == nil {
+	c.mysqlOnce.Do(func() {
 		c.mySQLSession = db.NewMySQL(c.cfg.DB.MySQLAddr, c.cfg.DB.MySQLMaxOpenConns, c.cfg.DB.MySQLMaxIdleConns, c.cfg.DB.MySQLConnMaxLifetime)
-	}
-
+	})
 	return c.mySQLSession
 }
 
@@ -100,17 +101,17 @@ func (c *Context) DB() *dbr.Session {
 
 // NewRedisCache 创建一个redis缓存
 func (c *Context) NewRedisCache() *common.RedisCache {
-	if c.redisCache == nil {
+	c.redisOnce.Do(func() {
 		c.redisCache = common.NewRedisCache(c.cfg.DB.RedisAddr, c.cfg.DB.RedisPass)
-	}
+	})
 	return c.redisCache
 }
 
 // NewMemoryCache 创建一个内存缓存
 func (c *Context) NewMemoryCache() cache.Cache {
-	if c.memoryCache == nil {
+	c.memoryOnce.Do(func() {
 		c.memoryCache = common.NewMemoryCache()
-	}
+	})
 	return c.memoryCache
 }
 
@@ -177,16 +178,26 @@ type OnlineStatus struct {
 // OnlineStatusListener 在线状态监听
 type OnlineStatusListener func(onlineStatusList []OnlineStatus)
 
-var onlinStatusListeners = make([]OnlineStatusListener, 0)
+var (
+	onlinStatusListeners     = make([]OnlineStatusListener, 0)
+	onlinStatusListenersLock sync.RWMutex
+)
 
 // AddOnlineStatusListener 添加在线状态监听
 func (c *Context) AddOnlineStatusListener(listener OnlineStatusListener) {
+	onlinStatusListenersLock.Lock()
+	defer onlinStatusListenersLock.Unlock()
 	onlinStatusListeners = append(onlinStatusListeners, listener)
 }
 
 // GetAllOnlineStatusListeners 获取所有在线监听者
 func (c *Context) GetAllOnlineStatusListeners() []OnlineStatusListener {
-	return onlinStatusListeners
+	onlinStatusListenersLock.RLock()
+	defer onlinStatusListenersLock.RUnlock()
+	// 返回副本以避免调用者持有 slice 时的竞态
+	result := make([]OnlineStatusListener, len(onlinStatusListeners))
+	copy(result, onlinStatusListeners)
+	return result
 }
 
 // EventCommit 事件提交
@@ -195,10 +206,15 @@ type EventCommit func(err error)
 // EventListener EventListener
 type EventListener func(data []byte, commit EventCommit)
 
-var eventListeners = map[string][]EventListener{}
+var (
+	eventListeners     = map[string][]EventListener{}
+	eventListenersLock sync.RWMutex
+)
 
 // AddEventListener  添加事件监听
 func (c *Context) AddEventListener(event string, listener EventListener) {
+	eventListenersLock.Lock()
+	defer eventListenersLock.Unlock()
 	listeners := eventListeners[event]
 	if listeners == nil {
 		listeners = make([]EventListener, 0)
@@ -209,22 +225,39 @@ func (c *Context) AddEventListener(event string, listener EventListener) {
 
 // GetEventListeners 获取某个事件
 func (c *Context) GetEventListeners(event string) []EventListener {
-	return eventListeners[event]
+	eventListenersLock.RLock()
+	defer eventListenersLock.RUnlock()
+	listeners := eventListeners[event]
+	// 返回副本以避免调用者持有 slice 时的竞态
+	result := make([]EventListener, len(listeners))
+	copy(result, listeners)
+	return result
 }
 
 // MessagesListener 消息监听者
 type MessagesListener func(messages []*MessageResp)
 
-var messagesListeners = make([]MessagesListener, 0)
+var (
+	messagesListeners     = make([]MessagesListener, 0)
+	messagesListenersLock sync.RWMutex
+)
 
 // AddMessagesListener 添加消息监听者
 func (c *Context) AddMessagesListener(listener MessagesListener) {
+	messagesListenersLock.Lock()
+	defer messagesListenersLock.Unlock()
 	messagesListeners = append(messagesListeners, listener)
 }
 
 // NotifyMessagesListeners 通知消息监听者
 func (c *Context) NotifyMessagesListeners(messages []*MessageResp) {
-	for _, messagesListener := range messagesListeners {
+	messagesListenersLock.RLock()
+	// 复制 slice 以避免在迭代过程中持有锁
+	listeners := make([]MessagesListener, len(messagesListeners))
+	copy(listeners, messagesListeners)
+	messagesListenersLock.RUnlock()
+
+	for _, messagesListener := range listeners {
 		messagesListener(messages)
 	}
 }
