@@ -20,7 +20,7 @@ func GetSignStr(params map[string]interface{}) string {
 		}
 		vs := ObjToStr(v)
 
-		signStr = fmt.Sprintf("%s=%s", k, vs)
+		signStr += fmt.Sprintf("%s=%s", k, vs)
 
 		if i != len(keys)-1 {
 			signStr += "&"
@@ -52,13 +52,13 @@ func ObjToStr(v interface{}) string {
 	case int32:
 		strV = fmt.Sprintf("%d", v)
 	case uint32:
-		strV = fmt.Sprintf("%s", v)
+		strV = fmt.Sprintf("%d", v)
 	case string:
 		strV = fmt.Sprintf("%s", v)
 	case float32:
-		strV = fmt.Sprintf("%s", v)
+		strV = fmt.Sprintf("%g", v)
 	case float64:
-		strV = fmt.Sprintf("%s", v)
+		strV = fmt.Sprintf("%g", v)
 	default:
 		strV = fmt.Sprintf("%s", v)
 	}

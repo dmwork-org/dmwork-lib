@@ -26,6 +26,11 @@ func New(addr string, password string) *Conn {
 	return c
 }
 
+// Close closes the underlying Redis client and releases resources.
+func (rc *Conn) Close() error {
+	return rc.client.Close()
+}
+
 func (rc *Conn) Ping() (string, error) {
 	return rc.client.Ping().Result()
 }
@@ -163,9 +168,13 @@ func (rc *Conn) Hmget(key string, field ...string) ([]string, error) {
 		return nil, err
 	}
 	if results != nil {
-		resultStrings := make([]string, 0)
+		resultStrings := make([]string, 0, len(results))
 		for _, result := range results {
-			resultStrings = append(resultStrings, result.(string))
+			if result == nil {
+				resultStrings = append(resultStrings, "")
+			} else {
+				resultStrings = append(resultStrings, result.(string))
+			}
 		}
 		return resultStrings, nil
 	}
@@ -275,10 +284,10 @@ func (rc *Conn) ZAdd(key string, scoremember ...interface{}) error {
 
 	members := make([]rd.Z, 0)
 	for i := 0; i < len(scoremember); i = i + 2 {
-		score := scoremember[0].(float64)
+		score := scoremember[i].(float64)
 		members = append(members, rd.Z{
 			Score:  score,
-			Member: scoremember[1],
+			Member: scoremember[i+1],
 		})
 	}
 	return rc.client.ZAdd(key, members...).Err()
