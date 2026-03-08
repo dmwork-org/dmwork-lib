@@ -139,6 +139,7 @@ func (f FileDirMigrationSource) findMigrations(fs *register.SQLFS, migrations *[
 			}
 
 			migration, err := migrate.ParseMigration(info.Name(), file.(io.ReadSeeker))
+			file.Close()
 			if err != nil {
 				return fmt.Errorf("error while parsing %s: %s", info.Name(), err)
 			}
