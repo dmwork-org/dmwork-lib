@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	imlog "github.com/dmwork-org/dmwork-lib/pkg/log"
 	"github.com/dmwork-org/dmwork-lib/pkg/util"
-	"go.uber.org/zap"
 )
 
 // ContentType 正文类型
@@ -155,16 +153,18 @@ func (c ContentType) Int() int {
 
 // GetFakeChannelIDWith GetFakeChannelIDWith
 func GetFakeChannelIDWith(fromUID, toUID string) string {
-	// TODO：这里可能会出现相等的情况 ，如果相等可以截取一部分再做hash直到不相等，后续完善
 	fromUIDHash := util.HashCrc32(fromUID)
 	toUIDHash := util.HashCrc32(toUID)
 	if fromUIDHash > toUIDHash {
 		return fmt.Sprintf("%s@%s", fromUID, toUID)
 	}
-	if fromUIDHash == toUIDHash {
-		imlog.Warn("生成的fromUID的Hash和toUID的Hash是相同的！！", zap.Uint32("fromUIDHash", fromUIDHash), zap.Uint32("toUIDHash", toUIDHash), zap.String("fromUID", fromUID), zap.String("toUID", toUID))
+	if fromUIDHash < toUIDHash {
+		return fmt.Sprintf("%s@%s", toUID, fromUID)
 	}
-
+	// 哈希值相等时，按字符串字典序决定拼接顺序，确保结果唯一且确定
+	if fromUID > toUID {
+		return fmt.Sprintf("%s@%s", fromUID, toUID)
+	}
 	return fmt.Sprintf("%s@%s", toUID, fromUID)
 }
 
