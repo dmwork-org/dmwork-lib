@@ -90,6 +90,26 @@ func TestGetRandomName(t *testing.T) {
 	}
 }
 
+func TestGetRandomName_LastElementReachable(t *testing.T) {
+	// Test that all names can be selected (including the last one)
+	// Run multiple iterations to statistically verify the last element is reachable
+	lastElement := names[len(names)-1]
+	foundLast := false
+
+	// Run enough iterations to have high probability of hitting the last element
+	for i := 0; i < 10000; i++ {
+		name := GetRandomName()
+		if name == lastElement {
+			foundLast = true
+			break
+		}
+	}
+
+	if !foundLast {
+		t.Errorf("GetRandomName() never returned the last element %q after 10000 iterations", lastElement)
+	}
+}
+
 func TestUnderscoreName(t *testing.T) {
 	tests := []struct {
 		input    string
