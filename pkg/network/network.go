@@ -96,15 +96,7 @@ func PostForWWWFormForBytres(urlStr string, params map[string]string, headers ma
 	for key, value := range params {
 		data.Set(key, value)
 	}
-	queryStr := ""
-
-	for key, value := range params {
-		queryStr = fmt.Sprintf("%s=%s&%s", key, value, queryStr)
-	}
-	if len(queryStr) > 0 {
-		queryStr = queryStr[0 : len(queryStr)-1]
-	}
-	request, err := http.NewRequest("POST", urlStr, strings.NewReader(queryStr))
+	request, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -170,20 +162,11 @@ func PostForWWWFormForAll(urlStr string, bodyData io.Reader, headers map[string]
 }
 
 func PostForWWWFormReXML(urlStr string, params map[string]string, headers map[string]string) ([]byte, error) {
-
 	data := url.Values{}
 	for key, value := range params {
 		data.Set(key, value)
 	}
-	queryStr := ""
-
-	for key, value := range params {
-		queryStr = fmt.Sprintf("%s=%s&%s", key, value, queryStr)
-	}
-	if len(queryStr) > 0 {
-		queryStr = queryStr[0 : len(queryStr)-1]
-	}
-	request, err := http.NewRequest("POST", urlStr, strings.NewReader(queryStr))
+	request, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +181,6 @@ func PostForWWWFormReXML(urlStr string, params map[string]string, headers map[st
 	}
 	defer resp.Body.Close()
 	respData, err := io.ReadAll(resp.Body)
-	fmt.Println(string(respData))
 	if err != nil {
 		return []byte(""), err
 	}

@@ -93,3 +93,61 @@ func TestPostForWWWFormReXML_BodyClose(t *testing.T) {
 		t.Errorf("unexpected result: %s", result)
 	}
 }
+
+func TestPostForWWWFormForBytres_URLEncoding(t *testing.T) {
+	// Create a test server that captures the request body
+	var receivedBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			t.Errorf("failed to parse form: %v", err)
+		}
+		receivedBody = r.PostForm.Encode()
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`ok`))
+	}))
+	defer server.Close()
+
+	// Test with special characters that need URL encoding
+	params := map[string]string{
+		"name":  "test&admin=true",
+		"value": "hello world",
+		"chars": "a=b&c=d",
+	}
+
+	_, err := PostForWWWFormForBytres(server.URL, params, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that special characters were properly encoded and not injected
+	if strings.Contains(receivedBody, "admin=true") && !strings.Contains(receivedBody, "name=test%26admin%3Dtrue") {
+		t.Errorf("URL encoding vulnerability: special chars not properly encoded. Body: %s", receivedBody)
+	}
+}
+
+func TestPostForWWWFormReXML_URLEncoding(t *testing.T) {
+	// Create a test server that verifies form data is properly encoded
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			t.Errorf("failed to parse form: %v", err)
+		}
+		// Verify the value is correctly decoded (was properly encoded in request)
+		if r.PostForm.Get("injection") != "value&extra=injected" {
+			t.Errorf("expected value with special chars, got: %s", r.PostForm.Get("injection"))
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`<ok/>`))
+	}))
+	defer server.Close()
+
+	params := map[string]string{
+		"injection": "value&extra=injected",
+	}
+
+	_, err := PostForWWWFormReXML(server.URL, params, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
