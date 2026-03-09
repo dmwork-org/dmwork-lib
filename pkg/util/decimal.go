@@ -737,7 +737,7 @@ func (d Decimal) RoundCash(interval uint8) Decimal {
 		if d.exp < 0 {
 			// TODO: optimize and reduce allocations
 			orgExp := d.exp
-			dOne := New(10^-int64(orgExp), orgExp)
+			dOne := New(1, orgExp)
 			d2 := d
 			d2.exp = 0
 			if d2.Mod(fiveDec).Equal(Zero) {
