@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"path"
 	"time"
 
@@ -17,9 +18,10 @@ var errorLogger *zap.Logger
 var warnLogger *zap.Logger
 var testLogger *zap.Logger
 var atom = zap.NewAtomicLevel()
-var defaultOnce sync.Once
+var configured int32 // atomic flag: 1 = Configure() was called explicitly
 
 func Configure(opts *Options) {
+	atomic.StoreInt32(&configured, 1)
 	atom.SetLevel(opts.Level)
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
@@ -111,9 +113,14 @@ func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 }
 
 
+var initOnce sync.Once
+
 func initDefault() {
-	defaultOnce.Do(func() {
-		Configure(NewOptions())
+	initOnce.Do(func() {
+		// Only apply defaults if Configure() hasn't been called explicitly
+		if atomic.LoadInt32(&configured) == 0 {
+			Configure(NewOptions())
+		}
 	})
 }
 
