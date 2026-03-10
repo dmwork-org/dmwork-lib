@@ -70,6 +70,13 @@ func (m *MemoryCache) SetAndExpire(key string, value string, expire time.Duratio
 	m.Lock()
 	defer m.Unlock()
 	m.cacheMap[key] = value
+	if expire > 0 {
+		time.AfterFunc(expire, func() {
+			m.Lock()
+			defer m.Unlock()
+			delete(m.cacheMap, key)
+		})
+	}
 	return nil
 }
 
