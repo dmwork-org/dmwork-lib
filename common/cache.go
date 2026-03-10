@@ -64,6 +64,11 @@ func (m *MemoryCache) Set(key string, value string) error {
 	m.Lock()
 	defer m.Unlock()
 	m.cacheMap[key] = value
+	// Cancel any existing expiration timer for this key
+	if t, ok := m.timers[key]; ok {
+		t.Stop()
+		delete(m.timers, key)
+	}
 	return nil
 }
 
