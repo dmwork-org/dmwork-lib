@@ -1,6 +1,7 @@
 package server
 
 import (
+	stdlog "log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -78,7 +79,7 @@ func (s *Server) run(sslAddr string, addr ...string) error {
 				}()
 				err := s.r.Run(addr...)
 				if err != nil {
-					s.Error("HTTP server failed", zap.Any("error", err))
+					stdlog.Fatalf("HTTP server failed: %v", err)
 				}
 			}()
 		} else {
@@ -110,7 +111,7 @@ func (s *Server) Start() error {
 		}()
 		err := s.run(s.sslAddr, s.addr)
 		if err != nil {
-			s.Error("server run failed", zap.Any("error", err))
+			stdlog.Fatalf("server run failed: %v", err)
 		}
 	}()
 
