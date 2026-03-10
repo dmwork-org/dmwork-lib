@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"os"
+	"sync"
 	"path"
 	"time"
 
@@ -16,6 +17,7 @@ var errorLogger *zap.Logger
 var warnLogger *zap.Logger
 var testLogger *zap.Logger
 var atom = zap.NewAtomicLevel()
+var defaultOnce sync.Once
 
 func Configure(opts *Options) {
 	atom.SetLevel(opts.Level)
@@ -108,39 +110,38 @@ func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
+
+func initDefault() {
+	defaultOnce.Do(func() {
+		Configure(NewOptions())
+	})
+}
+
 // Info Info
 func Info(msg string, fields ...zap.Field) {
 
-	if logger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	logger.Info(msg, fields...)
 }
 
 // Debug Debug
 func Debug(msg string, fields ...zap.Field) {
 
-	if logger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	logger.Debug(msg, fields...)
 
 }
 
 // Error Error
 func Error(msg string, fields ...zap.Field) {
-	if errorLogger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	errorLogger.Error(msg, fields...)
 }
 
 // Warn Warn
 func Warn(msg string, fields ...zap.Field) {
 
-	if warnLogger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	warnLogger.Warn(msg, fields...)
 }
 
