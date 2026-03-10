@@ -20,6 +20,5 @@ func CentToYuan(cent int64) float64 {
 	MustNoErr(err)
 
 	result, _ := centDec.Div(mDec).Round(2).Float64()
-	MustNoErr(err)
 	return result
 }
