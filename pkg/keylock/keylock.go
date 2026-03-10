@@ -15,6 +15,7 @@ type KeyLock struct {
 	locks         map[string]*innerLock
 	cleanInterval time.Duration
 	stopChan      chan struct{}
+	stopOnce      sync.Once
 	mutex         sync.Mutex
 }
 
@@ -69,7 +70,9 @@ func (l *KeyLock) StartCleanLoop() {
 
 // StopCleanLoop stops the background clean goroutine.
 func (l *KeyLock) StopCleanLoop() {
-	close(l.stopChan)
+	l.stopOnce.Do(func() {
+		close(l.stopChan)
+	})
 }
 
 func (l *KeyLock) cleanLoop() {
