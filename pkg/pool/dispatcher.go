@@ -3,6 +3,7 @@ package pool
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/panjf2000/ants/v2"
 )
@@ -11,6 +12,7 @@ type Collector struct {
 	Work        chan *Job // receives jobs to send to workers
 	pool        *ants.Pool
 	workerCount int64
+	closeOnce   sync.Once
 }
 
 func StartDispatcher(workerCount int64) Collector {
@@ -51,7 +53,10 @@ func (c Collector) loopPop() {
 }
 
 // Close stops the dispatcher goroutine and releases the worker pool.
-func (c Collector) Close() {
-	close(c.Work)
-	c.pool.Release()
+// Safe to call multiple times.
+func (c *Collector) Close() {
+	c.closeOnce.Do(func() {
+		close(c.Work)
+		c.pool.Release()
+	})
 }
