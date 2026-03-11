@@ -93,3 +93,69 @@ func TestPostForWWWFormReXML_BodyClose(t *testing.T) {
 		t.Errorf("unexpected result: %s", result)
 	}
 }
+
+func TestPostForWWWFormForBytres_URLEncoding(t *testing.T) {
+	// Test that special characters are properly URL-encoded
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			t.Fatalf("failed to parse form: %v", err)
+		}
+		// Verify special characters are correctly decoded
+		if r.FormValue("name") != "John Doe" {
+			t.Errorf("expected 'John Doe', got '%s'", r.FormValue("name"))
+		}
+		if r.FormValue("query") != "a=b&c=d" {
+			t.Errorf("expected 'a=b&c=d', got '%s'", r.FormValue("query"))
+		}
+		if r.FormValue("special") != "hello+world" {
+			t.Errorf("expected 'hello+world', got '%s'", r.FormValue("special"))
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`ok`))
+	}))
+	defer server.Close()
+
+	params := map[string]string{
+		"name":    "John Doe",       // space
+		"query":   "a=b&c=d",        // equals and ampersand
+		"special": "hello+world",    // plus sign
+	}
+	result, err := PostForWWWFormForBytres(server.URL, params, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if string(result) != "ok" {
+		t.Errorf("unexpected result: %s", result)
+	}
+}
+
+func TestPostForWWWFormReXML_URLEncoding(t *testing.T) {
+	// Test that special characters are properly URL-encoded
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			t.Fatalf("failed to parse form: %v", err)
+		}
+		// Verify special characters are correctly decoded
+		if r.FormValue("data") != "<xml>&value</xml>" {
+			t.Errorf("expected '<xml>&value</xml>', got '%s'", r.FormValue("data"))
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`<xml>ok</xml>`))
+	}))
+	defer server.Close()
+
+	params := map[string]string{
+		"data": "<xml>&value</xml>", // XML special characters
+	}
+	result, err := PostForWWWFormReXML(server.URL, params, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if string(result) != `<xml>ok</xml>` {
+		t.Errorf("unexpected result: %s", result)
+	}
+}

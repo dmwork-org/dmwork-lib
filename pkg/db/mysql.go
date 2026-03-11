@@ -70,6 +70,7 @@ func (f FileDirMigrationSource) findMigrations(dir http.FileSystem, migrations *
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	files, err := file.Readdir(0)
 	if err != nil {
@@ -79,12 +80,13 @@ func (f FileDirMigrationSource) findMigrations(dir http.FileSystem, migrations *
 	for _, info := range files {
 
 		if strings.HasSuffix(info.Name(), ".sql") {
-			file, err := dir.Open(info.Name())
+			sqlFile, err := dir.Open(info.Name())
 			if err != nil {
 				return fmt.Errorf("Error while opening %s: %s", info.Name(), err)
 			}
 
-			migration, err := migrate.ParseMigration(info.Name(), file)
+			migration, err := migrate.ParseMigration(info.Name(), sqlFile)
+			sqlFile.Close()
 			if err != nil {
 				return fmt.Errorf("Error while parsing %s: %s", info.Name(), err)
 			}

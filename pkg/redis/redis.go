@@ -281,17 +281,24 @@ score 值可以是整数值或双精度浮点数。
 当 key 存在但不是有序集类型时，返回一个错误
 */
 func (rc *Conn) ZAdd(key string, scoremember ...interface{}) error {
-
-	members := make([]rd.Z, 0)
+	if len(scoremember) == 0 {
+		return nil
+	}
+	if len(scoremember)%2 != 0 {
+		return errors.New("redis ZAdd requires an even number of arguments (score-member pairs)")
+	}
+	members := make([]rd.Z, 0, len(scoremember)/2)
 	for i := 0; i < len(scoremember); i = i + 2 {
-		score := scoremember[i].(float64)
+		score, ok := scoremember[i].(float64)
+		if !ok {
+			return errors.New("redis ZAdd score must be float64")
+		}
 		members = append(members, rd.Z{
 			Score:  score,
 			Member: scoremember[i+1],
 		})
 	}
 	return rc.client.ZAdd(key, members...).Err()
-
 }
 
 func (rc *Conn) ZRem(key string, members ...interface{}) error {
@@ -381,7 +388,17 @@ func (rc *Conn) GeoRadius(key string, longitude, latitude float64, radius float6
 }
 
 func (rc *Conn) MSet(keyValues ...string) error {
-	return rc.client.MSet(keyValues).Err()
+	if len(keyValues) == 0 {
+		return nil
+	}
+	if len(keyValues)%2 != 0 {
+		return errors.New("redis MSet requires an even number of arguments (key-value pairs)")
+	}
+	args := make([]interface{}, len(keyValues))
+	for i, v := range keyValues {
+		args[i] = v
+	}
+	return rc.client.MSet(args...).Err()
 }
 
 // BLPop  BLPOP key [key ...] timeout
