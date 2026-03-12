@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"log"
 	"encoding/json"
 )
 
@@ -9,9 +10,19 @@ import (
 func ToJson(obj interface{}) string {
 	jsonData, err := json.Marshal(obj)
 	if err != nil {
+		log.Printf("ToJson marshal error: %v", err)
 		return ""
 	}
 	return string(jsonData)
+}
+
+// ToJsonE 将对象转换为JSON，返回错误而非静默忽略
+func ToJsonE(obj interface{}) (string, error) {
+	jsonData, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonData), nil
 }
 
 func JsonToMap(json string) (map[string]interface{}, error) {
