@@ -15,7 +15,7 @@ type Collector struct {
 	closeOnce   sync.Once
 }
 
-func StartDispatcher(workerCount int64) Collector {
+func StartDispatcher(workerCount int64) *Collector {
 	input := make(chan *Job) // channel to recieve work
 
 	pool, err := ants.NewPool(int(workerCount))
@@ -23,7 +23,7 @@ func StartDispatcher(workerCount int64) Collector {
 		panic(fmt.Errorf("start dispatcher error: %v", err))
 	}
 
-	collector := Collector{
+	collector := &Collector{
 		Work:        input,
 		pool:        pool,
 		workerCount: workerCount,
@@ -34,7 +34,7 @@ func StartDispatcher(workerCount int64) Collector {
 	return collector
 }
 
-func (c Collector) loopPop() {
+func (c *Collector) loopPop() {
 	for job := range c.Work {
 
 		if c.pool.Running() >= int(c.workerCount+1) {
