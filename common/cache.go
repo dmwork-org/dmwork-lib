@@ -83,12 +83,17 @@ func (m *MemoryCache) SetAndExpire(key string, value string, expire time.Duratio
 		delete(m.timers, key)
 	}
 	if expire > 0 {
-		m.timers[key] = time.AfterFunc(expire, func() {
+		t := time.AfterFunc(expire, func() {
 			m.Lock()
 			defer m.Unlock()
-			delete(m.cacheMap, key)
-			delete(m.timers, key)
+			// Only delete if this timer is still the current one for the key.
+			// A newer SetAndExpire may have replaced it while we waited for the lock.
+			if cur, ok := m.timers[key]; ok && cur == t {
+				delete(m.cacheMap, key)
+				delete(m.timers, key)
+			}
 		})
+		m.timers[key] = t
 	}
 	return nil
 }
