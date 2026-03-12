@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 
 	wklog "github.com/dmwork-org/dmwork-lib/pkg/log"
+	"go.uber.org/zap"
 )
 
 //将对象转换为JSON
 func ToJson(obj interface{}) string {
 	jsonData, err := json.Marshal(obj)
 	if err != nil {
-		wklog.Warn("ToJson marshal error: " + err.Error())
+		wklog.Warn("ToJson marshal error", zap.Error(err))
 		return ""
 	}
 	return string(jsonData)
