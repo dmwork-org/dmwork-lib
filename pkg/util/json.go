@@ -18,8 +18,8 @@ func ToJson(obj interface{}) string {
 	return string(jsonData)
 }
 
-// ToJsonE 将对象转换为JSON，返回错误而非静默忽略
-func ToJsonE(obj interface{}) (string, error) {
+// ToJsonSafe 将对象转换为JSON，返回错误而非静默忽略
+func ToJsonSafe(obj interface{}) (string, error) {
 	jsonData, err := json.Marshal(obj)
 	if err != nil {
 		return "", err
