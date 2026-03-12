@@ -2,15 +2,16 @@ package util
 
 import (
 	"bytes"
-	"log"
 	"encoding/json"
+
+	wklog "github.com/dmwork-org/dmwork-lib/pkg/log"
 )
 
 //将对象转换为JSON
 func ToJson(obj interface{}) string {
 	jsonData, err := json.Marshal(obj)
 	if err != nil {
-		log.Printf("ToJson marshal error: %v", err)
+		wklog.Warn("ToJson marshal error: " + err.Error())
 		return ""
 	}
 	return string(jsonData)
