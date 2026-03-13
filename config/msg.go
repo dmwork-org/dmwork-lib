@@ -987,7 +987,18 @@ func (m *MessageResp) GetContentType() int {
 	if err != nil {
 		return 0
 	}
-	contentTypeInt64, _ := payloadMap["type"].(json.Number).Int64()
+	typeVal, ok := payloadMap["type"]
+	if !ok {
+		return 0
+	}
+	jsonNum, ok := typeVal.(json.Number)
+	if !ok {
+		return 0
+	}
+	contentTypeInt64, err := jsonNum.Int64()
+	if err != nil {
+		return 0
+	}
 	return int(contentTypeInt64)
 }
 
