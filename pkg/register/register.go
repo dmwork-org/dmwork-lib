@@ -138,21 +138,30 @@ func NewSQLFS(fs embed.FS) *SQLFS {
 }
 
 var once sync.Once
+var moduleMu sync.RWMutex
 var moduleList []Module
 
 func GetModules(ctx any) []Module {
 
 	once.Do(func() {
+		moduleMu.Lock()
+		defer moduleMu.Unlock()
 		for _, m := range modules {
 			moduleList = append(moduleList, m(ctx))
 		}
 	})
 
+	moduleMu.RLock()
+	defer moduleMu.RUnlock()
 	return moduleList
 }
 
 func GetModuleByName(name string, ctx any) Module {
+	// Ensure modules are initialized
+	GetModules(ctx)
 
+	moduleMu.RLock()
+	defer moduleMu.RUnlock()
 	for _, m := range moduleList {
 		if m.Name == name {
 			return m
@@ -163,6 +172,8 @@ func GetModuleByName(name string, ctx any) Module {
 
 // GetService 获取服务
 func GetService(name string) interface{} {
+	moduleMu.RLock()
+	defer moduleMu.RUnlock()
 	for _, m := range moduleList {
 		if m.Name == name {
 			return m.Service
