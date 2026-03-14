@@ -1,9 +1,9 @@
 package pool
 
 import (
-	"github.com/eapache/queue"
-	"runtime"
 	"sync"
+
+	"github.com/eapache/queue"
 )
 
 
@@ -12,6 +12,7 @@ type Queue struct {
 	popable *sync.Cond
 	buffer  *queue.Queue
 	closed  bool
+	drained *sync.Cond // signaled when an item is removed or queue is closed
 }
 
 func NewQueue() *Queue {
@@ -19,6 +20,7 @@ func NewQueue() *Queue {
 		buffer: queue.New(),
 	}
 	e.popable = sync.NewCond(&e.Mutex)
+	e.drained = sync.NewCond(&e.Mutex)
 	return e
 }
 
@@ -35,7 +37,8 @@ func (e *Queue) Close() {
 	defer e.Mutex.Unlock()
 	if !e.closed {
 		e.closed = true
-		e.popable.Broadcast() //广播
+		e.popable.Broadcast()
+		e.drained.Broadcast()
 	}
 }
 
@@ -58,6 +61,7 @@ func (e *Queue) Pop() (v interface{}) {
 	if buffer.Length() > 0 {
 		v = buffer.Peek()
 		buffer.Remove()
+		e.drained.Broadcast()
 	}
 	return
 }
@@ -72,6 +76,7 @@ func (e *Queue) TryPop() (v interface{}, ok bool) {
 	if buffer.Length() > 0 {
 		v = buffer.Peek()
 		buffer.Remove()
+		e.drained.Broadcast()
 		ok = true
 	} else if e.closed {
 		ok = true
@@ -89,13 +94,9 @@ func (e *Queue) Len() int {
 
 // Wait blocks until the queue is empty or closed.
 func (e *Queue) Wait() {
-	for {
-		e.Mutex.Lock()
-		done := e.closed || e.buffer.Length() == 0
-		e.Mutex.Unlock()
-		if done {
-			break
-		}
-		runtime.Gosched()
+	e.Mutex.Lock()
+	defer e.Mutex.Unlock()
+	for !e.closed && e.buffer.Length() > 0 {
+		e.drained.Wait()
 	}
 }
