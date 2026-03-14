@@ -3,6 +3,7 @@ package server
 import (
 	stdlog "log"
 	"net/http"
+	"runtime/debug"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,7 +75,7 @@ func (s *Server) run(sslAddr string, addr ...string) error {
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
-						s.Error("HTTP server goroutine panic", zap.Any("panic", r))
+						s.Error("HTTP server goroutine panic", zap.Any("panic", r), zap.String("stack", string(debug.Stack())))
 					}
 				}()
 				err := s.r.Run(addr...)
@@ -106,7 +107,7 @@ func (s *Server) Start() error {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				s.Error("server start goroutine panic", zap.Any("panic", r))
+				s.Error("server start goroutine panic", zap.Any("panic", r), zap.String("stack", string(debug.Stack())))
 			}
 		}()
 		err := s.run(s.sslAddr, s.addr)
