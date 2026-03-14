@@ -13,11 +13,11 @@ import (
 )
 
 // NewMySQL 创建一个MySQL db，[path]db存储路径 [sqlDir]sql脚本目录
-func NewMySQL(addr string, maxOpenConns int, maxIdleConns int, connMaxLifetime time.Duration) *dbr.Session {
+func NewMySQL(addr string, maxOpenConns int, maxIdleConns int, connMaxLifetime time.Duration) (*dbr.Session, error) {
 
 	conn, err := dbr.Open("mysql", addr, nil)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	conn.SetMaxOpenConns(maxOpenConns)
 	conn.SetMaxIdleConns(maxIdleConns)
@@ -25,7 +25,7 @@ func NewMySQL(addr string, maxOpenConns int, maxIdleConns int, connMaxLifetime t
 
 	session := conn.NewSession(nil)
 
-	return session
+	return session, nil
 }
 
 func Migration(sqlDir string, session *dbr.Session) error {

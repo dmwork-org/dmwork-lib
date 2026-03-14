@@ -10,15 +10,15 @@ import (
 )
 
 // NewSqlite 创建一个sqlite db，[path]db存储路径 [sqlDir]sql脚本目录
-func NewSqlite(filepath string, sqlDir string) *dbr.Session {
+func NewSqlite(filepath string, sqlDir string) (*dbr.Session, error) {
 
 	err := os.Mkdir(path.Dir(filepath), 0750)
 	if err != nil && !os.IsExist(err) {
-		panic(err)
+		return nil, err
 	}
 	conn, err := dbr.Open("sqlite3", filepath, nil)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	session := conn.NewSession(nil)
 	migrations := &migrate.FileMigrationSource{
@@ -26,7 +26,7 @@ func NewSqlite(filepath string, sqlDir string) *dbr.Session {
 	}
 	_, err = migrate.Exec(session.DB, "sqlite3", migrations, migrate.Up)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return session
+	return session, nil
 }
