@@ -28,6 +28,7 @@ type Context struct {
 	mysqlOnce    sync.Once
 	redisOnce    sync.Once
 	memoryOnce   sync.Once
+	elasticOnce  sync.Once
 	log.Log
 	EventPool      pool.Collector
 	PushPool       pool.Collector // 离线push
