@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"fmt"
+	gohtml "html"
 	"io"
 
 	"github.com/gomarkdown/markdown"
@@ -28,8 +29,8 @@ func renderHookCodeBlock(w io.Writer, node ast.Node, entering bool) (ast.WalkSta
 
 	_, ok := node.(*ast.Code)
 	if ok {
-		fmt.Println("code-------------->")
-		w.Write([]byte(fmt.Sprintf("<pre class=\"notranslate\">%s</pre>", string(node.AsLeaf().Literal))))
+		escaped := gohtml.EscapeString(string(node.AsLeaf().Literal))
+		w.Write([]byte(fmt.Sprintf("<pre class=\"notranslate\">%s</pre>", escaped)))
 		return ast.GoToNext, true
 	}
 
