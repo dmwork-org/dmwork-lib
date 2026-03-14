@@ -44,11 +44,11 @@ func (l *KeyLock) Lock(key string) {
 func (l *KeyLock) Unlock(key string) {
 	l.mutex.Lock()
 	keyLock, ok := l.locks[key]
-	l.mutex.Unlock()
 	if ok {
-		keyLock.done()
 		keyLock.Unlock()
+		keyLock.done() // Decrement AFTER Unlock so Clean() won't delete while key is still held
 	}
+	l.mutex.Unlock()
 }
 
 // Clean removes idle locks (count == 0).
