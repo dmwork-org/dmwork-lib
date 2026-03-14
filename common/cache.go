@@ -47,6 +47,7 @@ func (r *RedisCache) GetRedisConn() *redis.Conn {
 // MemoryCache 内存缓存
 type MemoryCache struct {
 	cacheMap map[string]string
+	timers   map[string]*time.Timer
 	sync.RWMutex
 }
 
@@ -54,6 +55,7 @@ type MemoryCache struct {
 func NewMemoryCache() *MemoryCache {
 	return &MemoryCache{
 		cacheMap: map[string]string{},
+		timers:   map[string]*time.Timer{},
 	}
 }
 
@@ -62,6 +64,11 @@ func (m *MemoryCache) Set(key string, value string) error {
 	m.Lock()
 	defer m.Unlock()
 	m.cacheMap[key] = value
+	// Cancel any existing expiration timer for this key
+	if t, ok := m.timers[key]; ok {
+		t.Stop()
+		delete(m.timers, key)
+	}
 	return nil
 }
 
@@ -70,6 +77,24 @@ func (m *MemoryCache) SetAndExpire(key string, value string, expire time.Duratio
 	m.Lock()
 	defer m.Unlock()
 	m.cacheMap[key] = value
+	// Cancel any existing timer for this key to prevent stale deletion
+	if t, ok := m.timers[key]; ok {
+		t.Stop()
+		delete(m.timers, key)
+	}
+	if expire > 0 {
+		t := time.AfterFunc(expire, func() {
+			m.Lock()
+			defer m.Unlock()
+			// Only delete if this timer is still the current one for the key.
+			// A newer SetAndExpire may have replaced it while we waited for the lock.
+			if cur, ok := m.timers[key]; ok && cur == t {
+				delete(m.cacheMap, key)
+				delete(m.timers, key)
+			}
+		})
+		m.timers[key] = t
+	}
 	return nil
 }
 
@@ -85,5 +110,9 @@ func (m *MemoryCache) Delete(key string) error {
 	m.Lock()
 	defer m.Unlock()
 	delete(m.cacheMap, key)
+	if t, ok := m.timers[key]; ok {
+		t.Stop()
+		delete(m.timers, key)
+	}
 	return nil
 }
