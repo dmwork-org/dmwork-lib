@@ -95,15 +95,15 @@ func PKCS5Padding(ciphertext []byte, blockSize int) []byte {
 func PKCS5UnPadding(origData []byte) ([]byte, error) {
 	length := len(origData)
 	if length == 0 {
-		return nil, errors.New("empty input")
+		return nil, errors.New("pkcs5: empty input")
 	}
 	unpadding := int(origData[length-1])
 	if unpadding == 0 || unpadding > length {
-		return nil, errors.New("invalid padding")
+		return nil, errors.New("pkcs5: invalid padding size")
 	}
 	for i := length - unpadding; i < length; i++ {
 		if origData[i] != byte(unpadding) {
-			return nil, errors.New("invalid padding")
+			return nil, errors.New("pkcs5: invalid padding bytes")
 		}
 	}
 	return origData[:(length - unpadding)], nil
@@ -124,15 +124,15 @@ func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
 func PKCS7UnPadding(origData []byte) ([]byte, error) {
 	length := len(origData)
 	if length == 0 {
-		return nil, errors.New("empty input")
+		return nil, errors.New("pkcs7: empty input")
 	}
 	unpadding := int(origData[length-1])
 	if unpadding == 0 || unpadding > length {
-		return nil, errors.New("invalid padding")
+		return nil, errors.New("pkcs7: invalid padding size")
 	}
 	for i := length - unpadding; i < length; i++ {
 		if origData[i] != byte(unpadding) {
-			return nil, errors.New("invalid padding")
+			return nil, errors.New("pkcs7: invalid padding bytes")
 		}
 	}
 	return origData[:(length - unpadding)], nil
