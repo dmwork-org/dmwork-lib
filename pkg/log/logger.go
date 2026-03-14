@@ -3,6 +3,8 @@ package log
 import (
 	"fmt"
 	"os"
+	"sync"
+	"sync/atomic"
 	"path"
 	"time"
 
@@ -16,8 +18,10 @@ var errorLogger *zap.Logger
 var warnLogger *zap.Logger
 var testLogger *zap.Logger
 var atom = zap.NewAtomicLevel()
+var configured int32 // atomic flag: 1 = Configure() was called explicitly
 
 func Configure(opts *Options) {
+	atomic.StoreInt32(&configured, 1)
 	atom.SetLevel(opts.Level)
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
@@ -108,39 +112,43 @@ func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
+
+var initOnce sync.Once
+
+func initDefault() {
+	initOnce.Do(func() {
+		// Only apply defaults if Configure() hasn't been called explicitly
+		if atomic.LoadInt32(&configured) == 0 {
+			Configure(NewOptions())
+		}
+	})
+}
+
 // Info Info
 func Info(msg string, fields ...zap.Field) {
 
-	if logger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	logger.Info(msg, fields...)
 }
 
 // Debug Debug
 func Debug(msg string, fields ...zap.Field) {
 
-	if logger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	logger.Debug(msg, fields...)
 
 }
 
 // Error Error
 func Error(msg string, fields ...zap.Field) {
-	if errorLogger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	errorLogger.Error(msg, fields...)
 }
 
 // Warn Warn
 func Warn(msg string, fields ...zap.Field) {
 
-	if warnLogger == nil {
-		Configure(NewOptions())
-	}
+	initDefault()
 	warnLogger.Warn(msg, fields...)
 }
 
