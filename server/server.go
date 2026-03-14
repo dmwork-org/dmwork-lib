@@ -3,19 +3,19 @@ package server
 import (
 	stdlog "log"
 	"net/http"
-	"runtime/debug"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/dmwork-org/dmwork-lib/config"
 	"github.com/dmwork-org/dmwork-lib/module"
 	"github.com/dmwork-org/dmwork-lib/pkg/log"
-	"go.uber.org/zap"
 	"github.com/dmwork-org/dmwork-lib/pkg/register"
 	"github.com/dmwork-org/dmwork-lib/pkg/wkhttp"
 	"github.com/judwhite/go-svc"
 	"github.com/unrolled/secure"
+	"go.uber.org/zap"
 )
 
 // Server唐僧叨叨server
