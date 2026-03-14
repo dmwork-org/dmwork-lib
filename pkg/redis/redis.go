@@ -2,6 +2,7 @@ package redis
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	rd "github.com/go-redis/redis"
@@ -281,17 +282,21 @@ score 值可以是整数值或双精度浮点数。
 当 key 存在但不是有序集类型时，返回一个错误
 */
 func (rc *Conn) ZAdd(key string, scoremember ...interface{}) error {
-
-	members := make([]rd.Z, 0)
+	if len(scoremember)%2 != 0 {
+		return errors.New("scoremember must have even number of elements")
+	}
+	members := make([]rd.Z, 0, len(scoremember)/2)
 	for i := 0; i < len(scoremember); i = i + 2 {
-		score := scoremember[i].(float64)
+		score, ok := scoremember[i].(float64)
+		if !ok {
+			return fmt.Errorf("score at index %d must be float64, got %T", i, scoremember[i])
+		}
 		members = append(members, rd.Z{
 			Score:  score,
 			Member: scoremember[i+1],
 		})
 	}
 	return rc.client.ZAdd(key, members...).Err()
-
 }
 
 func (rc *Conn) ZRem(key string, members ...interface{}) error {
