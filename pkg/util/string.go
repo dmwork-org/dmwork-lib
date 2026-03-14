@@ -89,6 +89,7 @@ func GetRandomString(num int) string {
 		panic(err)
 	}
 	for i := range result {
+		// Note: modulo bias is acceptable for salt generation
 		result[i] = charset[result[i]%byte(len(charset))]
 	}
 	return string(result)
