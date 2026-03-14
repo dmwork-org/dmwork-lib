@@ -1,7 +1,9 @@
 package util
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
+	mathrand "math/rand"
 	"strings"
 	"time"
 
@@ -81,14 +83,17 @@ func GetRandomSalt() string {
 	return GetRandomString(8)
 }
 
-//GetRandomString 生成随机字符串
+// GetRandomString generates a cryptographically secure random string
 func GetRandomString(num int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	const charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	result := make([]byte, num)
+	charsetLen := big.NewInt(int64(len(charset)))
 	for i := 0; i < num; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
+		n, err := rand.Int(rand.Reader, charsetLen)
+		if err != nil {
+			panic(err)
+		}
+		result[i] = charset[n.Int64()]
 	}
 	return string(result)
 }
@@ -115,5 +120,6 @@ var names = []string{"独角王", "老鼋", "灵感大王", "如意真仙", "蝎
 
 // GetRandomName 获取随机的名字
 func GetRandomName() string {
-	return names[rand.Intn(len(names))]
+	r := mathrand.New(mathrand.NewSource(time.Now().UnixNano()))
+	return names[r.Intn(len(names))]
 }
