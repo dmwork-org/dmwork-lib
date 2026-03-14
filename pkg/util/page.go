@@ -16,20 +16,28 @@ func NewPage(pageIndex uint64, pageSize uint64, total uint64, data interface{}) 
 	return &Page{PageIndex: pageIndex, PageSize: pageSize, Data: data, Total: total}
 }
 
-//ToPageNumOrDefault 将字符串转换为数字类型 如果字符串为空 则赋值分页默认参数
+//ToPageNumOrDefault 将字符串转换为数字类型 如果字符串为空或解析失败 则赋值分页默认参数
 func ToPageNumOrDefault(pageIndex string, pageSize string) (pIndex64 uint64, pSize64 uint64) {
 	var pageIndex64 uint64
 	var pageSize64 uint64
+	var err error
+
 	if pageIndex == "" {
 		pageIndex64 = 1
 	} else {
-		pageIndex64, _ = strconv.ParseUint(pageIndex, 10, 64)
+		pageIndex64, err = strconv.ParseUint(pageIndex, 10, 64)
+		if err != nil || pageIndex64 == 0 {
+			pageIndex64 = 1
+		}
 	}
 
 	if pageSize == "" {
 		pageSize64 = 10
 	} else {
-		pageSize64, _ = strconv.ParseUint(pageSize, 10, 64)
+		pageSize64, err = strconv.ParseUint(pageSize, 10, 64)
+		if err != nil || pageSize64 == 0 {
+			pageSize64 = 10
+		}
 	}
 
 	return pageIndex64, pageSize64
