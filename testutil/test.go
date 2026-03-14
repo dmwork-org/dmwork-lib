@@ -65,12 +65,19 @@ func NewTestServer(args ...string) (*server.Server, *config.Context) {
 // CleanAllTables 清空所有表
 func CleanAllTables(c *config.Context) error {
 	var dropSqls []string
-	_, err := c.DB().SelectBySql("select  concat('DELETE FROM ','`', table_name,'`') FROM information_schema.tables WHERE table_schema = 'test' and table_name <> 'gorp_migrations'").Load(&dropSqls)
+	db, err := c.DB()
+	if err != nil {
+		return err
+	}
+	_, err = db.SelectBySql("select  concat('DELETE FROM ','`', table_name,'`') FROM information_schema.tables WHERE table_schema = 'test' and table_name <> 'gorp_migrations'").Load(&dropSqls)
+	if err != nil {
+		return err
+	}
 	for _, sql := range dropSqls {
-		_, err = c.DB().UpdateBySql(sql).Exec()
+		_, err = db.UpdateBySql(sql).Exec()
 		if err != nil {
 			return err
 		}
 	}
-	return err
+	return nil
 }

@@ -23,17 +23,22 @@ func (c *Context) GenSeq(flag string) (int64, error) {
 	seqLock.Lock()
 	defer seqLock.Unlock()
 
+	db, err := c.DB()
+	if err != nil {
+		return 0, fmt.Errorf("get db: %w", err)
+	}
+
 	key := fmt.Sprintf("seq:%s", flag)
 	seq := seqMap[flag]
 
 	if seq == nil {
-		seqM, err := querySeqWithKey(c.DB(), key)
+		seqM, err := querySeqWithKey(db, key)
 		if err != nil {
 			return 0, fmt.Errorf("query seq for %q: %w", flag, err)
 		}
 		if seqM == nil {
 			var currSeq int64 = 1000000
-			err = addOrUpdateSeq(c.DB(), &seqModel{
+			err = addOrUpdateSeq(db, &seqModel{
 				Key:    key,
 				Step:   int(seqStep),
 				MinSeq: currSeq + seqStep,
@@ -55,7 +60,7 @@ func (c *Context) GenSeq(flag string) (int64, error) {
 	}
 
 	if seq.CurSeq >= seq.MaxSeq {
-		err := addOrUpdateSeq(c.DB(), &seqModel{
+		err := addOrUpdateSeq(db, &seqModel{
 			Key:    key,
 			Step:   int(seqStep),
 			MinSeq: seq.CurSeq + seqStep,

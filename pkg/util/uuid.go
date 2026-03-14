@@ -72,6 +72,7 @@ var (
 	hardwareAddr  [6]byte
 	posixUID      = uint32(os.Getuid())
 	posixGID      = uint32(os.Getgid())
+	storageErr    error // stores any error from initialization
 )
 
 // String parse helpers.
@@ -80,40 +81,53 @@ var (
 	byteGroups = []int{8, 4, 4, 4, 12}
 )
 
-func initClockSequence() {
+func initClockSequence() error {
 	buf := make([]byte, 2)
-	safeRandom(buf)
+	if err := safeRandom(buf); err != nil {
+		return err
+	}
 	clockSequence = binary.BigEndian.Uint16(buf)
+	return nil
 }
 
-func initHardwareAddr() {
+func initHardwareAddr() error {
 	interfaces, err := net.Interfaces()
 	if err == nil {
 		for _, iface := range interfaces {
 			if len(iface.HardwareAddr) >= 6 {
 				copy(hardwareAddr[:], iface.HardwareAddr)
-				return
+				return nil
 			}
 		}
 	}
 
 	// Initialize hardwareAddr randomly in case
 	// of real network interfaces absence
-	safeRandom(hardwareAddr[:])
+	if err := safeRandom(hardwareAddr[:]); err != nil {
+		return err
+	}
 
 	// Set multicast bit as recommended in RFC 4122
 	hardwareAddr[0] |= 0x01
+	return nil
 }
 
 func initStorage() {
-	initClockSequence()
-	initHardwareAddr()
+	if err := initClockSequence(); err != nil {
+		storageErr = err
+		return
+	}
+	if err := initHardwareAddr(); err != nil {
+		storageErr = err
+		return
+	}
 }
 
-func safeRandom(dest []byte) {
+func safeRandom(dest []byte) error {
 	if _, err := rand.Read(dest); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // Returns difference in 100-nanosecond intervals between
@@ -379,9 +393,13 @@ func FromStringOrNil(input string) UUID {
 }
 
 // Returns UUID v1/v2 storage state.
-// Returns epoch timestamp, clock sequence, and hardware address.
-func getStorage() (uint64, uint16, []byte) {
+// Returns epoch timestamp, clock sequence, hardware address, and any initialization error.
+func getStorage() (uint64, uint16, []byte, error) {
 	storageOnce.Do(initStorage)
+
+	if storageErr != nil {
+		return 0, 0, nil, storageErr
+	}
 
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
@@ -394,14 +412,17 @@ func getStorage() (uint64, uint16, []byte) {
 	}
 	lastTime = timeNow
 
-	return timeNow, clockSequence, hardwareAddr[:]
+	return timeNow, clockSequence, hardwareAddr[:], nil
 }
 
 // NewV1 returns UUID based on current timestamp and MAC address.
-func NewV1() UUID {
+func NewV1() (UUID, error) {
 	u := UUID{}
 
-	timeNow, clockSeq, hardwareAddr := getStorage()
+	timeNow, clockSeq, hardwareAddr, err := getStorage()
+	if err != nil {
+		return Nil, err
+	}
 
 	binary.BigEndian.PutUint32(u[0:], uint32(timeNow))
 	binary.BigEndian.PutUint16(u[4:], uint16(timeNow>>32))
@@ -413,14 +434,17 @@ func NewV1() UUID {
 	u.SetVersion(1)
 	u.SetVariant()
 
-	return u
+	return u, nil
 }
 
 // NewV2 returns DCE Security UUID based on POSIX UID/GID.
-func NewV2(domain byte) UUID {
+func NewV2(domain byte) (UUID, error) {
 	u := UUID{}
 
-	timeNow, clockSeq, hardwareAddr := getStorage()
+	timeNow, clockSeq, hardwareAddr, err := getStorage()
+	if err != nil {
+		return Nil, err
+	}
 
 	switch domain {
 	case DomainPerson:
@@ -439,7 +463,7 @@ func NewV2(domain byte) UUID {
 	u.SetVersion(2)
 	u.SetVariant()
 
-	return u
+	return u, nil
 }
 
 // NewV3 returns UUID based on MD5 hash of namespace UUID and name.
@@ -452,13 +476,15 @@ func NewV3(ns UUID, name string) UUID {
 }
 
 // NewV4 returns random generated UUID.
-func NewV4() UUID {
+func NewV4() (UUID, error) {
 	u := UUID{}
-	safeRandom(u[:])
+	if err := safeRandom(u[:]); err != nil {
+		return Nil, err
+	}
 	u.SetVersion(4)
 	u.SetVariant()
 
-	return u
+	return u, nil
 }
 
 // NewV5 returns UUID based on SHA-1 hash of namespace UUID and name.

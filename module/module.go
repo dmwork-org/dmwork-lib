@@ -26,7 +26,11 @@ func Setup(ctx *config.Context) error {
 		}
 
 	}
-	err := executeSQL(sqlfss, ctx.DB())
+	db, err := ctx.DB()
+	if err != nil {
+		return err
+	}
+	err = executeSQL(sqlfss, db)
 	if err != nil {
 		return err
 	}

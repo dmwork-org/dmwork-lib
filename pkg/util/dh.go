@@ -8,10 +8,10 @@ import (
 )
 
 // GetCurve25519KeypPair GetCurve25519KeypPair
-func GetCurve25519KeypPair() (Aprivate, Apublic [32]byte) {
+func GetCurve25519KeypPair() (Aprivate, Apublic [32]byte, err error) {
 	//产生随机数
-	if _, err := io.ReadFull(rand.Reader, Aprivate[:]); err != nil {
-		panic(err)
+	if _, err = io.ReadFull(rand.Reader, Aprivate[:]); err != nil {
+		return
 	}
 	curve25519.ScalarBaseMult(&Apublic, &Aprivate)
 	return

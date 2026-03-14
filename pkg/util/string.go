@@ -10,9 +10,12 @@ import (
 )
 
 // GenerUUID 生成uuid
-func GenerUUID() string {
-
-	return strings.Replace(NewV4().String(), "-", "", -1)
+func GenerUUID() (string, error) {
+	uuid, err := NewV4()
+	if err != nil {
+		return "", err
+	}
+	return strings.Replace(uuid.String(), "-", "", -1), nil
 }
 
 func isUpper(b byte) bool {
