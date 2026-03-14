@@ -26,6 +26,7 @@ type Context struct {
 	redisCache   *common.RedisCache
 	memoryCache  cache.Cache
 	mysqlOnce    sync.Once
+	mysqlErr     error
 	redisOnce    sync.Once
 	memoryOnce   sync.Once
 	log.Log
@@ -78,11 +79,10 @@ func (c *Context) GetConfig() *Config {
 
 // NewMySQL 创建mysql数据库实例
 func (c *Context) NewMySQL() (*dbr.Session, error) {
-	var err error
 	c.mysqlOnce.Do(func() {
-		c.mySQLSession, err = db.NewMySQL(c.cfg.DB.MySQLAddr, c.cfg.DB.MySQLMaxOpenConns, c.cfg.DB.MySQLMaxIdleConns, c.cfg.DB.MySQLConnMaxLifetime)
+		c.mySQLSession, c.mysqlErr = db.NewMySQL(c.cfg.DB.MySQLAddr, c.cfg.DB.MySQLMaxOpenConns, c.cfg.DB.MySQLMaxIdleConns, c.cfg.DB.MySQLConnMaxLifetime)
 	})
-	return c.mySQLSession, err
+	return c.mySQLSession, c.mysqlErr
 }
 
 // AsyncTask 异步任务
