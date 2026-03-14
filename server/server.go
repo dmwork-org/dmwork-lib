@@ -1,9 +1,11 @@
 package server
 
 import (
+	stdlog "log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/dmwork-org/dmwork-lib/config"
@@ -13,6 +15,7 @@ import (
 	"github.com/dmwork-org/dmwork-lib/pkg/wkhttp"
 	"github.com/judwhite/go-svc"
 	"github.com/unrolled/secure"
+	"go.uber.org/zap"
 )
 
 // Server唐僧叨叨server
@@ -70,9 +73,14 @@ func (s *Server) run(sslAddr string, addr ...string) error {
 	if len(addr) != 0 {
 		if sslAddr != "" {
 			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						s.Error("HTTP server goroutine panic", zap.Any("panic", r), zap.String("stack", string(debug.Stack())))
+					}
+				}()
 				err := s.r.Run(addr...)
 				if err != nil {
-					panic(err)
+					stdlog.Fatalf("HTTP server failed: %v", err)
 				}
 			}()
 		} else {
@@ -97,9 +105,14 @@ func (s *Server) run(sslAddr string, addr ...string) error {
 
 func (s *Server) Start() error {
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				s.Error("server start goroutine panic", zap.Any("panic", r), zap.String("stack", string(debug.Stack())))
+			}
+		}()
 		err := s.run(s.sslAddr, s.addr)
 		if err != nil {
-			panic(err)
+			stdlog.Fatalf("server run failed: %v", err)
 		}
 	}()
 
