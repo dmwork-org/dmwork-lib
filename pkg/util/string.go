@@ -1,9 +1,9 @@
 package util
 
 import (
+	cryptorand "crypto/rand"
 	"math/rand"
 	"strings"
-	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -81,14 +81,16 @@ func GetRandomSalt() string {
 	return GetRandomString(8)
 }
 
-//GetRandomString 生成随机字符串
+// GetRandomString 生成随机字符串 (使用crypto/rand确保加密安全)
 func GetRandomString(num int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < num; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
+	const charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	result := make([]byte, num)
+	if _, err := cryptorand.Read(result); err != nil {
+		panic(err)
+	}
+	for i := range result {
+		// Note: modulo bias is acceptable for salt generation
+		result[i] = charset[result[i]%byte(len(charset))]
 	}
 	return string(result)
 }
