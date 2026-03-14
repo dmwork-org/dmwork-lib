@@ -40,3 +40,74 @@ func TestSubstr(t *testing.T) {
 		}
 	}
 }
+
+func TestObjToStr(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{"int", int(123), "123"},
+		{"uint", uint(456), "456"},
+		{"int64", int64(789), "789"},
+		{"uint64", uint64(1000), "1000"},
+		{"int8", int8(10), "10"},
+		{"uint8", uint8(20), "20"},
+		{"int16", int16(30), "30"},
+		{"uint16", uint16(40), "40"},
+		{"int32", int32(50), "50"},
+		{"uint32", uint32(60), "60"},
+		{"string", "hello", "hello"},
+		{"float32", float32(3.14), "3.14"},
+		{"float64", float64(2.718), "2.718"},
+		{"float64_scientific", float64(0.0000001), "1e-07"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := objToStr(tt.input)
+			if result != tt.expected {
+				t.Errorf("objToStr(%v) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestMapToQueryParamSort(t *testing.T) {
+	tests := []struct {
+		name     string
+		params   map[string]interface{}
+		expected string
+	}{
+		{
+			name:     "empty map",
+			params:   map[string]interface{}{},
+			expected: "",
+		},
+		{
+			name: "mixed types sorted",
+			params: map[string]interface{}{
+				"b": "value",
+				"a": 123,
+				"c": uint32(456),
+			},
+			expected: "a=123&b=value&c=456",
+		},
+		{
+			name: "float values",
+			params: map[string]interface{}{
+				"price": float64(19.99),
+			},
+			expected: "price=19.99",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MapToQueryParamSort(tt.params)
+			if result != tt.expected {
+				t.Errorf("MapToQueryParamSort(%v) = %q, want %q", tt.params, result, tt.expected)
+			}
+		})
+	}
+}
