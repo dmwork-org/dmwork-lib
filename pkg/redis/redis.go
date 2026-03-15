@@ -381,7 +381,11 @@ func (rc *Conn) GeoRadius(key string, longitude, latitude float64, radius float6
 }
 
 func (rc *Conn) MSet(keyValues ...string) error {
-	return rc.client.MSet(keyValues).Err()
+	args := make([]interface{}, len(keyValues))
+	for i, v := range keyValues {
+		args[i] = v
+	}
+	return rc.client.MSet(args...).Err()
 }
 
 // BLPop  BLPOP key [key ...] timeout
