@@ -1,7 +1,8 @@
 package wait
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -12,12 +13,15 @@ const (
 	defaultListElementLength = 64
 )
 
+// ErrDuplicateID is returned when attempting to register an ID that is already registered.
+var ErrDuplicateID = errors.New("duplicate id")
+
 // Wait Wait
 type Wait interface {
 	// Register waits returns a chan that waits on the given ID.
 	// The chan will be triggered when Trigger is called with
-	// the same ID.
-	Register(id uint64) <-chan interface{}
+	// the same ID. Returns ErrDuplicateID if the ID is already registered.
+	Register(id uint64) (<-chan interface{}, error)
 	// Trigger triggers the waiting chans with the given ID.
 	Trigger(id uint64, x interface{})
 	IsRegistered(id uint64) bool
@@ -43,17 +47,16 @@ func New() Wait {
 	return &res
 }
 
-func (w *list) Register(id uint64) <-chan interface{} {
+func (w *list) Register(id uint64) (<-chan interface{}, error) {
 	idx := id % defaultListElementLength
 	newCh := make(chan interface{}, 1)
 	w.e[idx].l.Lock()
 	defer w.e[idx].l.Unlock()
-	if _, ok := w.e[idx].m[id]; !ok {
-		w.e[idx].m[id] = newCh
-	} else {
-		log.Panicf("dup id %x", id)
+	if _, ok := w.e[idx].m[id]; ok {
+		return nil, fmt.Errorf("%w: %x", ErrDuplicateID, id)
 	}
-	return newCh
+	w.e[idx].m[id] = newCh
+	return newCh, nil
 }
 
 func (w *list) Trigger(id uint64, x interface{}) {
