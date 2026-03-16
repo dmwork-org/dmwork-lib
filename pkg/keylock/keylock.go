@@ -16,6 +16,8 @@ type KeyLock struct {
 	cleanInterval time.Duration
 	stopChan      chan struct{}
 	mutex         sync.Mutex
+	started       bool
+	stopOnce      sync.Once
 }
 
 // NewKeyLock creates a new KeyLock.
@@ -64,12 +66,24 @@ func (l *KeyLock) Clean() {
 
 // StartCleanLoop starts a background goroutine that periodically cleans idle locks.
 func (l *KeyLock) StartCleanLoop() {
+	l.mutex.Lock()
+	l.started = true
+	l.mutex.Unlock()
 	go l.cleanLoop()
 }
 
 // StopCleanLoop stops the background clean goroutine.
+// It is safe to call multiple times or before StartCleanLoop was called.
 func (l *KeyLock) StopCleanLoop() {
-	close(l.stopChan)
+	l.mutex.Lock()
+	started := l.started
+	l.mutex.Unlock()
+	if !started {
+		return
+	}
+	l.stopOnce.Do(func() {
+		close(l.stopChan)
+	})
 }
 
 func (l *KeyLock) cleanLoop() {
