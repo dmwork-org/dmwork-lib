@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -16,8 +17,27 @@ var errorLogger *zap.Logger
 var warnLogger *zap.Logger
 var testLogger *zap.Logger
 var atom = zap.NewAtomicLevel()
+var configOnce sync.Once
 
+// ensureConfigured ensures the logger is configured exactly once.
+// It uses sync.Once to prevent race conditions during concurrent access.
+func ensureConfigured() {
+	configOnce.Do(func() {
+		doConfigure(NewOptions())
+	})
+}
+
+// Configure configures the logger with the provided options.
+// This function is safe for concurrent use - only the first call takes effect.
 func Configure(opts *Options) {
+	configOnce.Do(func() {
+		doConfigure(opts)
+	})
+}
+
+// doConfigure performs the actual logger configuration.
+// This should only be called via sync.Once to ensure thread safety.
+func doConfigure(opts *Options) {
 	atom.SetLevel(opts.Level)
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(newEncoderConfig()),
@@ -80,7 +100,16 @@ func Configure(opts *Options) {
 	} else {
 		warnLogger = zap.New(core)
 	}
+}
 
+// resetForTesting resets the logger state for testing purposes.
+// This allows tests to reconfigure the logger with different options.
+func resetForTesting() {
+	configOnce = sync.Once{}
+	logger = nil
+	errorLogger = nil
+	warnLogger = nil
+	testLogger = nil
 }
 
 func newEncoderConfig() zapcore.EncoderConfig {
@@ -110,37 +139,25 @@ func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 
 // Info Info
 func Info(msg string, fields ...zap.Field) {
-
-	if logger == nil {
-		Configure(NewOptions())
-	}
+	ensureConfigured()
 	logger.Info(msg, fields...)
 }
 
 // Debug Debug
 func Debug(msg string, fields ...zap.Field) {
-
-	if logger == nil {
-		Configure(NewOptions())
-	}
+	ensureConfigured()
 	logger.Debug(msg, fields...)
-
 }
 
 // Error Error
 func Error(msg string, fields ...zap.Field) {
-	if errorLogger == nil {
-		Configure(NewOptions())
-	}
+	ensureConfigured()
 	errorLogger.Error(msg, fields...)
 }
 
 // Warn Warn
 func Warn(msg string, fields ...zap.Field) {
-
-	if warnLogger == nil {
-		Configure(NewOptions())
-	}
+	ensureConfigured()
 	warnLogger.Warn(msg, fields...)
 }
 
