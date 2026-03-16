@@ -338,13 +338,33 @@ func (r *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) {
 }
 
 // CORSMiddleware 跨域
-func CORSMiddleware() HandlerFunc {
+// Without arguments: allows all origins (*) without credentials
+// With allowed origins: whitelist mode with credentials, reflects matching origin
+func CORSMiddleware(allowedOrigins ...string) HandlerFunc {
+	// Build a set for O(1) lookup
+	originSet := make(map[string]struct{}, len(allowedOrigins))
+	for _, origin := range allowedOrigins {
+		originSet[origin] = struct{}{}
+	}
 
 	return func(c *Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		origin := c.Request.Header.Get("Origin")
+
+		if len(allowedOrigins) == 0 {
+			// No whitelist: allow all origins, no credentials
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		} else {
+			// Whitelist mode: check if origin is allowed
+			if _, ok := originSet[origin]; ok {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+				c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+			}
+			// Always set Vary: Origin in whitelist mode for proper caching
+			c.Writer.Header().Set("Vary", "Origin")
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, token, accept, origin, Cache-Control, X-Requested-With, appid, noncestr, sign, timestamp")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT,DELETE,PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
